@@ -243,4 +243,221 @@ namespace superKitAutomacao {
     }
 
     function write4bitsLCD(valor: number, rs: number): void {
-    }}
+        let backlight = 0x08;
+        let buffer = pins.createBuffer(1);
+        buffer.setNumber(NumberFormat.UInt8LE, 0, valor | rs | backlight);
+        pins.i2cWriteBuffer(lcdAddr, buffer);
+        buffer.setNumber(NumberFormat.UInt8LE, 0, valor | rs | backlight | 0x04);
+        pins.i2cWriteBuffer(lcdAddr, buffer);
+        control.waitMicros(1);
+        buffer.setNumber(NumberFormat.UInt8LE, 0, (valor | rs | backlight) & ~0x04);
+        pins.i2cWriteBuffer(lcdAddr, buffer);
+        control.waitMicros(40);
+    }
+
+    /**
+     * Inicializa a mini tela gráfica OLED SSD1306 (128x64).
+     */
+    //% blockId=superkit_init_oled block="inicializar Tela OLED I2C endereço %addr"
+    //% addr.defl=0x3C weight=90 group="Displays"
+    export function inicializarOLED(addr: number): void {
+        oledAddr = addr;
+        let cmds = [0xAE, 0xD5, 0x80, 0xA8, 0x3F, 0xD3, 0x00, 0x40, 0x8D, 0x14, 0x20, 0x00, 0xA1, 0xC8, 0xDA, 0x12, 0x81, 0xCF, 0xD9, 0xF1, 0xDB, 0x40, 0xA4, 0xA6, 0xAF];
+        for (let c of cmds) {
+            let buf = pins.createBuffer(2);
+            buf.setNumber(NumberFormat.UInt8LE, 0, 0x00);
+            buf.setNumber(NumberFormat.UInt8LE, 1, c);
+            pins.i2cWriteBuffer(oledAddr, buf);
+        }
+        limparOLED();
+    }
+
+    /**
+     * Limpa a tela OLED.
+     */
+    //% blockId=superkit_clear_oled block="limpar Tela OLED"
+    //% weight=88 group="Displays"
+    export function limparOLED(): void {
+        for (let pagina = 0; pagina < 8; pagina++) {
+            setPosicaoOLED(0, pagina);
+            let buf = pins.createBuffer(17);
+            buf.setNumber(NumberFormat.UInt8LE, 0, 0x40);
+            for (let i = 1; i < 17; i++) buf.setNumber(NumberFormat.UInt8LE, i, 0x00);
+            for (let x = 0; x < 8; x++) pins.i2cWriteBuffer(oledAddr, buf);
+        }
+    }
+
+    function setPosicaoOLED(coluna: number, pagina: number): void {
+        let buf = pins.createBuffer(2);
+        buf.setNumber(NumberFormat.UInt8LE, 0, 0x00);
+        buf.setNumber(NumberFormat.UInt8LE, 1, 0xB0 | pagina);
+        pins.i2cWriteBuffer(oledAddr, buf);
+        buf.setNumber(NumberFormat.UInt8LE, 1, 0x00 | (coluna & 0x0F));
+        pins.i2cWriteBuffer(oledAddr, buf);
+        buf.setNumber(NumberFormat.UInt8LE, 1, 0x10 | ((coluna >> 4) & 0x0F));
+        pins.i2cWriteBuffer(oledAddr, buf);
+    }
+
+    /**
+     * Mostra um texto em coordenadas específicas na OLED.
+     */
+    //% blockId=superkit_print_oled block="OLED mostrar texto %texto | na Coluna %x Linha %y"
+    //% x.min=0 x.max=120 y.min=0 y.max=7 weight=86 group="Displays"
+    export function mostrarTextoOLED(texto: string, x: number, y: number): void {
+        setPosicaoOLED(x, y);
+        for (let k = 0; k < texto.length; k++) {
+            let charCode = texto.charCodeAt(k);
+            let indiceFonte = (charCode - 32) * 5;
+            if (indiceFonte < 0 || indiceFonte >= FONTE_OLED.length) indiceFonte = 0;
+            let buf = pins.createBuffer(6);
+            buf.setNumber(NumberFormat.UInt8LE, 0, 0x40);
+            for (let i = 0; i < 5; i++) {
+                buf.setNumber(NumberFormat.UInt8LE, i + 1, FONTE_OLED[indiceFonte + i]);
+            }
+            pins.i2cWriteBuffer(oledAddr, buf);
+        }
+    }
+
+    /**
+     * Inicializa o display Nokia 5110 via SPI.
+     */
+    //% blockId=superkit_init_nokia block="inicializar Nokia 5110 | SCK=P13 MOSI=P15 DC=%dc CE=%ce RST=%rst"
+    //% weight=82 group="Displays"
+    export function inicializarNokia5110(dc: DigitalPin, ce: DigitalPin, rst: DigitalPin): void {
+        pins.spiFrequency(4000000);
+        pins.spiFormat(8, 0);
+        pins.digitalWritePin(rst, 0); basic.pause(10); pins.digitalWritePin(rst, 1);
+        pins.digitalWritePin(ce, 0); pins.digitalWritePin(dc, 0);
+        pins.spiWrite(0x21); pins.spiWrite(0xB1); pins.spiWrite(0x13);
+        pins.spiWrite(0x20); pins.spiWrite(0x0C); pins.digitalWritePin(ce, 1);
+    }
+
+    // =======================================================
+    // 🎛️ SUB-CATEGORIA: INTERFACES E KEYPADS
+    // =======================================================
+
+    /**
+     * Varre o Keypad 4x4 ligado direto na Robotbit (Linhas P0,P1,P2,P8 e Colunas P12,P13,P14,P15).
+     */
+    //% blockId=superkit_read_keypad block="varrer Keypad Robotbit (P0-P15)"
+    //% weight=100 group="Keypads"
+    export function lerKeypad4x4(): string {
+        let teclas = ["1", "2", "3", "A", "4", "5", "6", "B", "7", "8", "9", "C", "", "0", "#", "D"];
+        let linhas = [DigitalPin.P0, DigitalPin.P1, DigitalPin.P2, DigitalPin.P8];
+        let colunas = [DigitalPin.P12, DigitalPin.P13, DigitalPin.P14, DigitalPin.P15];
+        for (let c = 0; c < 4; c++) pins.setPull(colunas[c], PinPullMode.PullUp);
+        for (let r = 0; r < 4; r++) {
+            pins.digitalWritePin(linhas[r], 0);
+            for (let c = 0; c < 4; c++) {
+                if (pins.digitalReadPin(colunas[c]) == 0) {
+                    pins.digitalWritePin(linhas[r], 1);
+                    return teclas[r * 4 + c];
+                }
+            }
+            pins.digitalWritePin(linhas[r], 1);
+        }
+        return "";
+    }
+
+    /**
+     * Configura o endereço I2C do módulo expansor Keypad (PCF8574).
+     */
+    //% blockId=superkit_init_i2c_keypad block="configurar Keypad I2C endereço %addr"
+    //% addr.defl=0x20 weight=95 group="Keypads"
+    export function configurarKeypadI2C(addr: number): void {
+        keypadI2cAddr = addr;
+        let buf = pins.createBuffer(1);
+        buf.setNumber(NumberFormat.UInt8LE, 0, 0xFF);
+        pins.i2cWriteBuffer(keypadI2cAddr, buf);
+    }
+
+    /**
+     * Varre a matriz do Keypad 4x4 através do barramento I2C.
+     */
+    //% blockId=superkit_read_i2c_keypad block="varrer Keypad 4x4 via I2C"
+    //% weight=90 group="Keypads"
+    export function lerKeypadI2C(): string {
+        let teclas = ["1", "2", "3", "A", "4", "5", "6", "B", "7", "8", "9", "C", "", "0", "#", "D"];
+        for (let r = 0; r < 4; r++) {
+            let wBuf = pins.createBuffer(1);
+            wBuf.setNumber(NumberFormat.UInt8LE, 0, 0xFF & ~(1 << r));
+            pins.i2cWriteBuffer(keypadI2cAddr, wBuf);
+            let rBuf = pins.i2cReadBuffer(keypadI2cAddr, 1);
+            let leitura = rBuf.getNumber(NumberFormat.UInt8LE, 0);
+            for (let c = 0; c < 4; c++) {
+                if (((leitura >> (4 + c)) & 0x01) == 0) {
+                    let rstBuf = pins.createBuffer(1);
+                    rstBuf.setNumber(NumberFormat.UInt8LE, 0, 0xFF);
+                    pins.i2cWriteBuffer(keypadI2cAddr, rstBuf);
+                    return teclas[r * 4 + c];
+                }
+            }
+        }
+        return "";
+    }
+
+    /**
+     * Escreve uma máscara de bits diretamente em placas expansoras genéricas I2C PCF8574.
+     */
+    //% blockId=superkit_write_pcf8574 block="expansor PCF8574 endereço %addr | enviar byte %byteData"
+    //% addr.defl=0x20 weight=85 group="Keypads"
+    export function writePCF8574(addr: number, byteData: number): void {
+        let buf = pins.createBuffer(1);
+        buf.setNumber(NumberFormat.UInt8LE, 0, byteData);
+        pins.i2cWriteBuffer(addr, buf);
+    }
+
+    // =======================================================
+    // 🔑 SUB-CATEGORIA: IDENTIFICAÇÃO (RFID PN532 I2C)
+    // =======================================================
+
+    /**
+     * Inicializa o módulo RFID PN532 configurado em modo I2C.
+     */
+    //% blockId=superkit_init_rfid block="inicializar Leitor RFID PN532 via I2C"
+    //% weight=100 group="RFID"
+    export function inicializarPN532(): boolean {
+        let buf = pins.createBuffer(7);
+        buf.setNumber(NumberFormat.UInt8LE, 0, 0x00);
+        buf.setNumber(NumberFormat.UInt8LE, 1, 0x00);
+        buf.setNumber(NumberFormat.UInt8LE, 2, 0xFF);
+        buf.setNumber(NumberFormat.UInt8LE, 3, 0x03);
+        buf.setNumber(NumberFormat.UInt8LE, 4, 0xFC);
+        buf.setNumber(NumberFormat.UInt8LE, 5, 0xD4);
+        buf.setNumber(NumberFormat.UInt8LE, 6, 0x14);
+        pins.i2cWriteBuffer(rfidAddr, buf);
+        return true;
+    }
+
+    /**
+     * Extrai o código UID único de uma tag RFID aproximada em formato Hexadecimal legível.
+     */
+    //% blockId=superkit_read_rfid_uid block="ler UID da tag RFID presente"
+    //% weight=95 group="RFID"
+    export function lerTagUID(): string {
+        let cmd = pins.createBuffer(9);
+        cmd.setNumber(NumberFormat.UInt8LE, 0, 0x00);
+        cmd.setNumber(NumberFormat.UInt8LE, 1, 0x00);
+        cmd.setNumber(NumberFormat.UInt8LE, 2, 0xFF);
+        cmd.setNumber(NumberFormat.UInt8LE, 3, 0x04);
+        cmd.setNumber(NumberFormat.UInt8LE, 4, 0xFC);
+        cmd.setNumber(NumberFormat.UInt8LE, 5, 0xD4);
+        cmd.setNumber(NumberFormat.UInt8LE, 6, 0x4A);
+        cmd.setNumber(NumberFormat.UInt8LE, 7, 0x01);
+        cmd.setNumber(NumberFormat.UInt8LE, 8, 0x00);
+        pins.i2cWriteBuffer(rfidAddr, cmd);
+        basic.pause(30);
+        let response = pins.i2cReadBuffer(rfidAddr, 20);
+        if (response.getNumber(NumberFormat.UInt8LE, 6) == 0x4B) {
+            let uid = "";
+            let numBytes = response.getNumber(NumberFormat.UInt8LE, 12);
+            let hexChars = "0123456789ABCDEF";
+            for (let i = 0; i < numBytes; i++) {
+                let byteValor = response.getNumber(NumberFormat.UInt8LE, 13 + i);
+                uid += hexChars.charAt((byteValor >> 4) & 0x0F) + hexChars.charAt(byteValor & 0x0F);
+            }
+            return uid;
+        }
+        return "";
+    }
+}
