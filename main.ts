@@ -317,7 +317,7 @@ namespace superKitAutomacao {
     //% imageLiteralColumns=5
     //% imageLiteralRows=8
     //% weight=92 group="Displays"
-    export function criarCaractereCustomizado(leds: string, id: number): void {
+    export function criarCaractereCustomizado(leds: string, id: number, dummy: number = 0): void {
         let charId = id & 0x07;
         // Aponta para a memória CGRAM do caractere
         enviarComandoLCD(0x40 | (charId << 3));
@@ -359,8 +359,6 @@ namespace superKitAutomacao {
         // Retorna o ponteiro para a memória de tela (DDRAM) para não travar o LCD
         enviarComandoLCD(0x80);
     }
-
-
 
 
 
