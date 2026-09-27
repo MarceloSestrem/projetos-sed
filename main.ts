@@ -314,13 +314,14 @@ namespace superKitAutomacao {
 
 
     /**
-     * Matriz para desenhar um caractere e usá-lo diretamente dentro do texto.
+     * Matriz 5x8 para desenhar um caractere e usá-lo diretamente dentro do texto.
      */
     //% blockId="superkit_custom_char_matrix"
     //% block="%leds"
     //% imageLiteral=1
     //% imageLiteralColumns=5
     //% imageLiteralRows=8
+    //% shim=TD_ID
     //% weight=91 group="Displays"
     export function caractereCustomizado(leds: string): string {
         // Se esse mesmo desenho já foi salvo no LCD, reaproveita o ID existente
