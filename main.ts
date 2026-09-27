@@ -312,12 +312,13 @@ namespace superKitAutomacao {
      * Cria um caractere customizado desenhando na matriz 5x8.
      */
     //% blockId=superkit_create_custom_char block="LCD criar caractere ID %id"
+    //% id.defl=0
     //% id.min=0 id.max=7
     //% imageLiteral=1
     //% imageLiteralColumns=5
     //% imageLiteralRows=8
     //% weight=92 group="Displays"
-    export function criarCaractereCustomizado(leds: string, id: number): void {
+    export function criarCaractereCustomizado(leds: string, id: number = 0): void {
         let charId = id & 0x07;
         // Aponta para a memória CGRAM do caractere
         enviarComandoLCD(0x40 | (charId << 3));
@@ -356,9 +357,11 @@ namespace superKitAutomacao {
         }
 
 
-        // Retorna o ponteiro para a memória de tela (DDRAM) para não travar o LCD
+        // Retorna o ponteiro para a memória de tela (DDRAM)
         enviarComandoLCD(0x80);
     }
+
+
 
 
 
