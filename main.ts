@@ -308,57 +308,34 @@ namespace superKitAutomacao {
     }
 
 
+    export enum CaractereLCD {
+        //% block="caractere 0"
+        Char0 = 0,
+        //% block="caractere 1"
+        Char1 = 1,
+        //% block="caractere 2"
+        Char2 = 2,
+        //% block="caractere 3"
+        Char3 = 3,
+        //% block="caractere 4"
+        Char4 = 4,
+        //% block="caractere 5"
+        Char5 = 5,
+        //% block="caractere 6"
+        Char6 = 6,
+        //% block="caractere 7"
+        Char7 = 7
+    }
+
+
     /**
-     * Cria um caractere customizado desenhando na matriz 5x8.
+     * Retorna o caractere customizado como texto para usar dentro de frases.
      */
-    //% blockId="superkit_create_custom_char"
-    //% block="LCD criar caractere %leds|com ID %id"
-    //% id.min=0 id.max=7 id.defl=0
-    //% imageLiteral=1
-    //% imageLiteralColumns=5
-    //% imageLiteralRows=8
-    //% weight=92 group="Displays"
-    export function criarCaractereCustomizado(leds: string, id: number = 0, dummy: number = 0): void {
-        let charId = id & 0x07;
-        // Aponta para a memória CGRAM do caractere
-        enviarComandoLCD(0x40 | (charId << 3));
-
-
-        let linhas = leds.split("\n");
-        let count = 0;
-
-
-        for (let i = 0; i < linhas.length; i++) {
-            let linha = linhas[i].trim();
-            if (linha.length == 0) continue;
-
-
-            let val = 0;
-            let col = 0;
-            for (let j = 0; j < linha.length; j++) {
-                let char = linha.charAt(j);
-                if (char == "#" || char == "1" || char == "*") {
-                    val |= (1 << (4 - col));
-                    col++;
-                } else if (char == "." || char == "0") {
-                    col++;
-                }
-                if (col >= 5) break;
-            }
-            enviarDadosLCD(val);
-            count++;
-            if (count >= 8) break;
-        }
-
-
-        while (count < 8) {
-            enviarDadosLCD(0);
-            count++;
-        }
-
-
-        // Retorna o ponteiro para a memória de tela (DDRAM) para não travar o LCD
-        enviarComandoLCD(0x80);
+    //% blockId="superkit_custom_char_enum"
+    //% block="caractere %char"
+    //% weight=91 group="Displays"
+    export function obterCaractereEspecial(char: CaractereLCD): string {
+        return String.fromCharCode(char);
     }
 
 
