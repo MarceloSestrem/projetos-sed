@@ -56,11 +56,39 @@ namespace superKitAutomacao {
         LCD20x4 = 20
     }
 
+    export enum AlinhamentoTexto {
+        //% block="Esquerda"
+        Esquerda = 0,
+        //% block="Centro"
+        Centro = 1,
+        //% block="Direita"
+        Direita = 2
+    }
+
     export enum EstadoChave {
         //% block="LIGADO"
         Ligado = 1,
         //% block="DESLIGADO"
         Desligado = 0
+    }
+
+    export enum PinoPCF8574 {
+        //% block="P0"
+        P0 = 0,
+        //% block="P1"
+        P1 = 1,
+        //% block="P2"
+        P2 = 2,
+        //% block="P3"
+        P3 = 3,
+        //% block="P4"
+        P4 = 4,
+        //% block="P5"
+        P5 = 5,
+        //% block="P6"
+        P6 = 6,
+        //% block="P7"
+        P7 = 7
     }
 
     // Registradores do PCA9685
@@ -75,6 +103,7 @@ namespace superKitAutomacao {
     let oledAddr = 0x3C
     let rfidAddr = 0x24
     let keypadI2cAddr = 0x20
+    let pcfState = 0xFF
 
     const FONTE_OLED = [
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x5f, 0x00, 0x00, 0x00, 0x07, 0x00, 0x07, 0x00,
@@ -136,7 +165,7 @@ namespace superKitAutomacao {
     }
 
     /**
-     * Controla os motores DC (M1A a M2B) na Robotbit.
+     * Controla um motor DC individual na Robotbit.
      */
     //% blockId=robotbit_controlar_motor block="mover motor %motor | velocidade %velocidade"
     //% velocidade.min=-255 velocidade.max=255
@@ -154,6 +183,17 @@ namespace superKitAutomacao {
         let velMapeada = Math.map(Math.abs(velocidade), 0, 255, 0, 4095);
         writePWM(canalM1, velMapeada);
         writePWM(canalM2, 0);
+    }
+
+    /**
+     * Controla dois motores DC simultaneamente.
+     */
+    //% blockId=robotbit_controlar_dois_motores block="mover motor 1 %motor1 velocidade %vel1 | e motor 2 %motor2 velocidade %vel2"
+    //% vel1.min=-255 vel1.max=255 vel2.min=-255 vel2.max=255
+    //% weight=98 group="Robótica" inlineInputMode=inline
+    export function controlarDoisMotores(motor1: MotorSelecao, vel1: number, motor2: MotorSelecao, vel2: number): void {
+        controlarMotor(motor1, vel1);
+        controlarMotor(motor2, vel2);
     }
 
     /**
@@ -231,13 +271,67 @@ namespace superKitAutomacao {
      * Escreve um texto em uma coordenada exata do LCD.
      */
     //% blockId=superkit_print_lcd block="LCD mostrar texto %texto | na Coluna %coluna Linha %linha"
-    //% coluna.min=0 coluna.max=19 weight=95 group="Displays"
+    //% coluna.min=0 coluna.max=19 weight=98 group="Displays"
     export function mostrarTextoLCD(texto: string, coluna: number, linha: LinhasLCD): void {
         let offsets = [0x00, 0x40, 0x14, 0x54];
         enviarComandoLCD(0x80 | (offsets[linha] + coluna));
         for (let i = 0; i < texto.length; i++) {
             enviarDadosLCD(texto.charCodeAt(i));
         }
+    }
+
+    /**
+     * Escreve texto alinhado (Esquerda, Centro ou Direita) em uma linha do LCD.
+     */
+    //% blockId=superkit_print_aligned_lcd block="LCD mostrar texto %texto | alinhado à %alinhamento na Linha %linha (modelo %modelo)"
+    //% weight=96 group="Displays"
+    export function mostrarTextoAlinhadoLCD(texto: string, alinhamento: AlinhamentoTexto, linha: LinhasLCD, modelo: ModeloLCD): void {
+        let largura = (modelo == ModeloLCD.LCD20x4) ? 20 : 16;
+        let col = 0;
+        if (alinhamento == AlinhamentoTexto.Centro) {
+            col = Math.max(0, Math.floor((largura - texto.length) / 2));
+        } else if (alinhamento == AlinhamentoTexto.Direita) {
+            col = Math.max(0, largura - texto.length);
+        }
+        mostrarTextoLCD(texto, col, linha);
+    }
+
+    /**
+     * Escreve um valor numérico no LCD I2C.
+     */
+    //% blockId=superkit_print_num_lcd block="LCD mostrar número %numero | na Coluna %coluna Linha %linha"
+    //% coluna.min=0 coluna.max=19 weight=94 group="Displays"
+    export function mostrarNumeroLCD(numero: number, coluna: number, linha: LinhasLCD): void {
+        mostrarTextoLCD(numero.toString(), coluna, linha);
+    }
+
+    /**
+     * Criar um caractere customizado para LCD (ID 0 a 7) definindo as 8 linhas (0 a 31 / binário 0b00000 a 0b11111).
+     */
+    //% blockId=superkit_create_char_lcd block="LCD criar caractere ID %id (0-7) | L1 %l1 L2 %l2 L3 %l3 L4 %l4 L5 %l5 L6 %l6 L7 %l7 L8 %l8"
+    //% id.min=0 id.max=7
+    //% l1.min=0 l1.max=31 l2.min=0 l2.max=31 l3.min=0 l3.max=31 l4.min=0 l4.max=31
+    //% l5.min=0 l5.max=31 l6.min=0 l6.max=31 l7.min=0 l7.max=31 l8.min=0 l8.max=31
+    //% l1.defl=0b00000 l2.defl=0b01010 l3.defl=0b11111 l4.defl=0b11111 l5.defl=0b01110 l6.defl=0b00100 l7.defl=0b00000 l8.defl=0b00000
+    //% weight=92 group="Displays" inlineInputMode=inline
+    export function criarCaractereLCD(id: number, l1: number, l2: number, l3: number, l4: number, l5: number, l6: number, l7: number, l8: number): void {
+        let charId = id & 0x07;
+        enviarComandoLCD(0x40 | (charId << 3));
+        let bytes = [l1, l2, l3, l4, l5, l6, l7, l8];
+        for (let i = 0; i < 8; i++) {
+            enviarDadosLCD(bytes[i]);
+        }
+    }
+
+    /**
+     * Desenha um caractere customizado no LCD na posição informada.
+     */
+    //% blockId=superkit_print_char_lcd block="LCD mostrar caractere customizado ID %id | na Coluna %coluna Linha %linha"
+    //% id.min=0 id.max=7 coluna.min=0 coluna.max=19 weight=90 group="Displays"
+    export function mostrarCaractereCustomizadoLCD(id: number, coluna: number, linha: LinhasLCD): void {
+        let offsets = [0x00, 0x40, 0x14, 0x54];
+        enviarComandoLCD(0x80 | (offsets[linha] + coluna));
+        enviarDadosLCD(id & 0x07);
     }
 
     function enviarComandoLCD(cmd: number): void {
@@ -265,7 +359,7 @@ namespace superKitAutomacao {
      * Inicializa a tela OLED SSD1306 (128x64).
      */
     //% blockId=superkit_init_oled block="inicializar Tela OLED I2C endereço %addr"
-    //% addr.defl=0x3C weight=90 group="Displays"
+    //% addr.defl=0x3C weight=88 group="Displays"
     export function inicializarOLED(addr: number): void {
         oledAddr = addr;
         let cmds = [0xAE, 0xD5, 0x80, 0xA8, 0x3F, 0xD3, 0x00, 0x40, 0x8D, 0x14, 0x20, 0x00, 0xA1, 0xC8, 0xDA, 0x12, 0x81, 0xCF, 0xD9, 0xF1, 0xDB, 0x40, 0xA4, 0xA6, 0xAF];
@@ -282,7 +376,7 @@ namespace superKitAutomacao {
      * Limpa a tela OLED.
      */
     //% blockId=superkit_clear_oled block="limpar Tela OLED"
-    //% weight=88 group="Displays"
+    //% weight=86 group="Displays"
     export function limparOLED(): void {
         for (let pagina = 0; pagina < 8; pagina++) {
             setPosicaoOLED(0, pagina);
@@ -308,7 +402,7 @@ namespace superKitAutomacao {
      * Mostra um texto na OLED.
      */
     //% blockId=superkit_print_oled block="OLED mostrar texto %texto | na Coluna %x Linha %y"
-    //% x.min=0 x.max=120 y.min=0 y.max=7 weight=86 group="Displays"
+    //% x.min=0 x.max=120 y.min=0 y.max=7 weight=84 group="Displays"
     export function mostrarTextoOLED(texto: string, x: number, y: number): void {
         setPosicaoOLED(x, y);
         for (let k = 0; k < texto.length; k++) {
@@ -403,7 +497,7 @@ namespace superKitAutomacao {
     }
 
     /**
-     * Escreve bytes na placa PCF8574.
+     * Escreve um byte completo na placa PCF8574.
      */
     //% blockId=superkit_write_pcf8574 block="expansor PCF8574 endereço %addr | enviar byte %byteData"
     //% addr.defl=0x20 weight=85 group="Keypads & Expansores"
@@ -411,6 +505,31 @@ namespace superKitAutomacao {
         let buf = pins.createBuffer(1);
         buf.setNumber(NumberFormat.UInt8LE, 0, byteData);
         pins.i2cWriteBuffer(addr, buf);
+    }
+
+    /**
+     * Controla um pino individual (P0 a P7) da placa expansora PCF8574.
+     */
+    //% blockId=superkit_write_pcf8574_pin block="expansor PCF8574 endereço %addr | pino %pino como %estado"
+    //% addr.defl=0x20 weight=84 group="Keypads & Expansores"
+    export function controlarPinoPCF8574(addr: number, pino: PinoPCF8574, estado: EstadoChave): void {
+        if (estado == EstadoChave.Ligado) {
+            pcfState |= (1 << pino);
+        } else {
+            pcfState &= ~(1 << pino);
+        }
+        writePCF8574(addr, pcfState);
+    }
+
+    /**
+     * Lê o estado de um pino individual (P0 a P7) do expansor PCF8574.
+     */
+    //% blockId=superkit_read_pcf8574_pin block="expansor PCF8574 endereço %addr | ler pino %pino"
+    //% addr.defl=0x20 weight=83 group="Keypads & Expansores"
+    export function lerPinoPCF8574(addr: number, pino: PinoPCF8574): number {
+        let rBuf = pins.i2cReadBuffer(addr, 1);
+        let val = rBuf.getNumber(NumberFormat.UInt8LE, 0);
+        return ((val & (1 << pino)) != 0) ? 1 : 0;
     }
 
     // =======================================================
