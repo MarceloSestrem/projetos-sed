@@ -288,6 +288,7 @@ namespace superKitAutomacao {
 
 
     //% blockId=superkit_print_aligned_lcd block="LCD mostrar texto %texto | alinhado à %alinhamento na Linha %linha (modelo %modelo)"
+    //% inlineInputMode="inline"
     //% weight=96 group="Displays"
     export function mostrarTextoAlinhadoLCD(texto: string, alinhamento: AlinhamentoTexto, linha: LinhasLCD, modelo: ModeloLCD): void {
         let largura = (modelo == ModeloLCD.LCD20x4) ? 20 : 16;
@@ -306,8 +307,6 @@ namespace superKitAutomacao {
     export function mostrarNumeroLCD(numero: number, coluna: number, linha: LinhasLCD): void {
         mostrarTextoLCD(numero.toString(), coluna, linha);
     }
-
-
 
 
 
@@ -383,12 +382,6 @@ namespace superKitAutomacao {
     export function caractereCustomizado(leds: string): string {
         return processarEGravarCGRAM(leds);
     }
-
-
-
-
-
-
 
 
 
