@@ -1,4 +1,5 @@
 //% color="#1C2833" weight=120 icon="\uf013" block="Super Kit Automação"
+//% groups=['Robótica', 'Displays', 'Keypads', 'RFID']
 namespace superKitAutomacao {
 
     export enum EstadoLinha {
@@ -55,8 +56,10 @@ namespace superKitAutomacao {
         LCD20x4 = 20
     }
 
+    // Registradores do Chip PCA9685 (Robotbit)
     const PCA9685_ADDRESS = 0x40
     const MODE1 = 0x00
+    const MODE2 = 0x01
     const PRESCALE = 0xFE
     const LED0_ON_L = 0x06
 
@@ -66,8 +69,32 @@ namespace superKitAutomacao {
     let rfidAddr = 0x24
     let keypadI2cAddr = 0x20
 
+    // Matriz de caracteres 5x7 para o OLED
+    const FONTE_OLED = [
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x5f, 0x00, 0x00, 0x00, 0x07, 0x00, 0x07, 0x00,
+        0x14, 0x7f, 0x14, 0x7f, 0x14, 0x24, 0x2a, 0x7f, 0x2a, 0x12, 0x23, 0x13, 0x08, 0x64, 0x62,
+        0x36, 0x49, 0x55, 0x22, 0x50, 0x00, 0x05, 0x03, 0x00, 0x00, 0x00, 0x1c, 0x22, 0x41, 0x00,
+        0x00, 0x41, 0x22, 0x1c, 0x00, 0x14, 0x08, 0x3e, 0x08, 0x14, 0x08, 0x08, 0x3e, 0x08, 0x08,
+        0x00, 0x50, 0x30, 0x00, 0x00, 0x08, 0x08, 0x08, 0x08, 0x08, 0x00, 0x60, 0x60, 0x00, 0x00,
+        0x20, 0x10, 0x08, 0x04, 0x02, 0x3e, 0x51, 0x49, 0x45, 0x3e, 0x00, 0x42, 0x7f, 0x40, 0x00,
+        0x42, 0x61, 0x51, 0x49, 0x46, 0x21, 0x41, 0x45, 0x4b, 0x31, 0x18, 0x14, 0x12, 0x7f, 0x10,
+        0x27, 0x45, 0x45, 0x45, 0x39, 0x3c, 0x4a, 0x49, 0x49, 0x30, 0x01, 0x71, 0x09, 0x05, 0x03,
+        0x36, 0x49, 0x49, 0x49, 0x36, 0x06, 0x49, 0x49, 0x29, 0x1e, 0x00, 0x36, 0x36, 0x00, 0x00,
+        0x00, 0x56, 0x36, 0x00, 0x00, 0x08, 0x14, 0x22, 0x41, 0x00, 0x24, 0x24, 0x24, 0x24, 0x24,
+        0x00, 0x41, 0x22, 0x14, 0x08, 0x02, 0x01, 0x51, 0x09, 0x06, 0x32, 0x49, 0x79, 0x41, 0x3e,
+        0x7e, 0x11, 0x11, 0x11, 0x7e, 0x7f, 0x49, 0x49, 0x49, 0x36, 0x3e, 0x41, 0x41, 0x41, 0x22,
+        0x7f, 0x41, 0x41, 0x22, 0x1c, 0x7f, 0x49, 0x49, 0x49, 0x41, 0x7f, 0x09, 0x09, 0x09, 0x01,
+        0x3e, 0x41, 0x49, 0x49, 0x7a, 0x7f, 0x08, 0x08, 0x08, 0x7f, 0x00, 0x41, 0x7f, 0x41, 0x00,
+        0x20, 0x40, 0x41, 0x3f, 0x01, 0x7f, 0x08, 0x14, 0x22, 0x41, 0x7f, 0x40, 0x40, 0x40, 0x40,
+        0x7f, 0x02, 0x0c, 0x02, 0x7f, 0x7f, 0x04, 0x08, 0x10, 0x7f, 0x3e, 0x41, 0x41, 0x41, 0x3e,
+        0x7f, 0x09, 0x09, 0x09, 0x06, 0x3e, 0x41, 0x51, 0x21, 0x5e, 0x7f, 0x09, 0x19, 0x29, 0x46,
+        0x46, 0x49, 0x49, 0x49, 0x31, 0x01, 0x01, 0x7f, 0x01, 0x01, 0x3f, 0x40, 0x40, 0x40, 0x3f,
+        0x1f, 0x20, 0x40, 0x20, 0x1f, 0x3f, 0x40, 0x38, 0x40, 0x3f, 0x63, 0x14, 0x08, 0x14, 0x63,
+        0x07, 0x08, 0x70, 0x08, 0x07, 0x61, 0x51, 0x49, 0x45, 0x43
+    ]
+
     // =======================================================
-    // 🤖 MÓDULO 1: ROBÓTICA E SEGUIDOR (ROBOTBIT & SENSORES)
+    // 🤖 SUB-CATEGORIA: ROBÓTICA E SEGUIDOR (ROBOTBIT & SENSORES)
     // =======================================================
 
     function initPCA9685(): void {
@@ -84,6 +111,10 @@ namespace superKitAutomacao {
         buf.setNumber(NumberFormat.UInt8LE, 0, MODE1);
         buf.setNumber(NumberFormat.UInt8LE, 1, 0x81);
         pins.i2cWriteBuffer(PCA9685_ADDRESS, buf);
+
+        buf.setNumber(NumberFormat.UInt8LE, 0, MODE2);
+        buf.setNumber(NumberFormat.UInt8LE, 1, 0x04);
+        pins.i2cWriteBuffer(PCA9685_ADDRESS, buf);
         pcaInicializado = true;
     }
 
@@ -99,23 +130,19 @@ namespace superKitAutomacao {
     }
 
     /**
-     * Controla a velocidade e direção dos motores DC (M1A a M2B) na Robotbit.
+     * Controla os motores DC (M1A a M2B) na Robotbit.
      */
     //% blockId=robotbit_controlar_motor block="mover motor %motor | velocidade %velocidade"
     //% velocidade.min=-255 velocidade.max=255
     //% weight=100 group="Robótica"
     export function controlarMotor(motor: MotorSelecao, velocidade: number): void {
         let canalM1 = 0; let canalM2 = 0;
-        // P8 mudou para P1 para liberar o pino para o Keypad 4x4
         if (motor == MotorSelecao.M1A) { canalM1 = 2; canalM2 = 3; }
         else if (motor == MotorSelecao.M1B) { canalM1 = 4; canalM2 = 5; }
         else if (motor == MotorSelecao.M2A) { canalM1 = 6; canalM2 = 7; }
         else if (motor == MotorSelecao.M2B) { canalM1 = 8; canalM2 = 9; }
 
         let pinoDir = (motor == MotorSelecao.M1A) ? DigitalPin.P1 : (motor == MotorSelecao.M1B ? DigitalPin.P11 : (motor == MotorSelecao.M2A ? DigitalPin.P14 : DigitalPin.P15));
-
-        // Como P14 e P15 também são colunas do Keypad, se o projeto usar motores M2A/M2B ao mesmo tempo que o teclado direto, 
-        // o ideal é focar nos motores M1A/M1B ou usar o Keypad via módulo I2C para evitar qualquer sobreposição.
         pins.digitalWritePin(pinoDir, velocidade >= 0 ? 0 : 1);
 
         let velMapeada = Math.map(Math.abs(velocidade), 0, 255, 0, 4095);
@@ -124,7 +151,7 @@ namespace superKitAutomacao {
     }
 
     /**
-     * Desliga e freia imediatamente TODOS os motores DC conectados.
+     * Desliga e freia imediatamente TODOS os motores DC.
      */
     //% blockId=robotbit_parar_todos_motores block="parar todos os motores"
     //% weight=95 group="Robótica"
@@ -134,7 +161,7 @@ namespace superKitAutomacao {
     }
 
     /**
-     * Controla o ângulo de um Servo Motor nas portas S1 a S4 da Robotbit.
+     * Controla um Servo Motor nas portas S1 a S4.
      */
     //% blockId=robotbit_controlar_servo block="definir servo na porta %porta | para ângulo %angulo °"
     //% angulo.min=0 angulo.max=180
@@ -146,7 +173,7 @@ namespace superKitAutomacao {
     }
 
     /**
-     * Verifica o estado dos 3 sensores de linha conectados rigidamente em P0, P1 e P2.
+     * Verifica os 3 sensores de linha conectados em P0, P1 e P2.
      */
     //% blockId=robotbit_ler_tres_sensores block="sensores Esquerdo (P0) Centro (P1) Direito (P2) leem respectivamente %estEsq %estCent %estDir"
     //% weight=85 group="Robótica" inlineInputMode=inline
@@ -178,23 +205,24 @@ namespace superKitAutomacao {
     }
 
     // =======================================================
-    // 📺 MÓDULO 2: DISPLAYS (LCD I2C, OLED E NOKIA 5110)
+    // 📺 SUB-CATEGORIA: DISPLAYS (LCD I2C, OLED E NOKIA 5110)
     // =======================================================
 
     /**
-     * Inicializa o display LCD I2C (16x2 ou 20x4) usando expansor PCF8574.
+     * Inicializa o display LCD I2C (16x2 ou 20x4).
      */
     //% blockId=superkit_init_lcd block="inicializar LCD I2C endereço %addr | modelo %modelo"
     //% addr.defl=0x27 weight=100 group="Displays"
     export function inicializarLCD(addr: number, modelo: ModeloLCD): void {
         lcdAddr = addr;
+        basic.pause(50);
         enviarComandoLCD(0x33); enviarComandoLCD(0x32);
-        enviarComandoLCD(0x28); enviarComandoLCD(0x0C); enviarComandoLCD(0x01);
+        enviarComandoLCD(0x28); enviarComandoLCD(0x0C); enviarComandoLCD(0x06); enviarComandoLCD(0x01);
         basic.pause(2);
     }
 
     /**
-     * Escreve um texto formatado em uma coordenada exata do LCD.
+     * Escreve um texto em uma coordenada exata do LCD.
      */
     //% blockId=superkit_print_lcd block="LCD mostrar texto %texto | na Coluna %coluna Linha %linha"
     //% coluna.min=0 coluna.max=19 weight=95 group="Displays"
@@ -215,44 +243,4 @@ namespace superKitAutomacao {
     }
 
     function write4bitsLCD(valor: number, rs: number): void {
-        let backlight = 0x08; let buffer = pins.createBuffer(1);
-        buffer.setNumber(NumberFormat.UInt8LE, 0, valor | rs | backlight);
-        pins.i2cWriteBuffer(lcdAddr, buffer);
-
-        buffer.setNumber(NumberFormat.UInt8LE, 0, valor | rs | backlight | 0x04);
-        pins.i2cWriteBuffer(lcdAddr, buffer); control.waitMicros(1);
-
-        buffer.setNumber(NumberFormat.UInt8LE, 0, (valor | rs | backlight) & ~0x04);
-        pins.i2cWriteBuffer(lcdAddr, buffer); control.waitMicros(40);
-    }
-
-    /**
-     * Inicializa o display gráfico OLED SSD1306 (128x64) via I2C.
-     */
-    //% blockId=superkit_init_oled block="inicializar Tela OLED I2C endereço %addr"
-    //% addr.defl=0x3C weight=90 group="Displays"
-    export function inicializarOLED(addr: number): void {
-        oledAddr = addr;
-        let cmds = [0xAE, 0xD5, 0x80, 0xA8, 0x3F, 0xD3, 0x00, 0x40, 0x8D, 0x14, 0x20, 0x00, 0xA1, 0xC8, 0xDA, 0x12, 0x81, 0xCF, 0xD9, 0xF1, 0xDB, 0x40, 0xA4, 0xA6, 0xAF];
-        for (let c of cmds) {
-            let buf = pins.createBuffer(2);
-            buf.setNumber(NumberFormat.UInt8LE, 0, 0x00);
-            buf.setNumber(NumberFormat.UInt8LE, 1, c);
-            pins.i2cWriteBuffer(oledAddr, buf);
-        }
-    }
-
-    /**
-     * Inicializa a tela clássica Nokia 5110 via SPI.
-     */
-    //% blockId=superkit_init_nokia block="inicializar Nokia 5110 | SCK=P13 MOSI=P15 DC=%dc CE=%ce RST=%rst"
-    //% weight=85 group="Displays"
-    export function inicializarNokia5110(dc: DigitalPin, ce: DigitalPin, rst: DigitalPin): void {
-        pins.spiFrequency(4000000); pins.spiFormat(8, 0);
-        pins.digitalWritePin(rst, 0); basic.pause(10); pins.digitalWritePin(rst, 1);
-        pins.digitalWritePin(ce, 0); pins.digitalWritePin(dc, 0);
-        pins.spiWrite(0x21); pins.spiWrite(0xB1); pins.spiWrite(0x13);
-        pins.spiWrite(0x20); pins.spiWrite(0x0C); pins.digitalWritePin(ce, 1);
-    }
-
-}
+    }}
