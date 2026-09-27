@@ -308,35 +308,27 @@ namespace superKitAutomacao {
     }
 
 
+
+
+
+
     // Controle interno automático de slots da memória do LCD (0 a 7)
     let proximoIdCGRAM = 0;
     let cgramCache: { [desenho: string]: number } = {};
 
 
-    /**
-     * Matriz 5x8 para desenhar um caractere e usá-lo diretamente dentro do texto.
-     */
-    //% blockId="superkit_custom_char_matrix"
-    //% block="%leds"
-    //% imageLiteral=1
-    //% imageLiteralColumns=5
-    //% imageLiteralRows=8
-    //% shim=TD_ID
-    //% weight=91 group="Displays"
-    export function caractereCustomizado(leds: string): string {
-        // Se esse mesmo desenho já foi salvo no LCD, reaproveita o ID existente
+    // Função auxiliar interna para gravar na CGRAM do LCD
+    function processarEGravarCGRAM(leds: string): string {
         if (cgramCache[leds] !== undefined) {
             return String.fromCharCode(cgramCache[leds]);
         }
 
 
-        // Define automaticamente qual slot (0 a 7) receberá o novo ícone
         let charId = proximoIdCGRAM;
         proximoIdCGRAM = (proximoIdCGRAM + 1) % 8;
         cgramCache[leds] = charId;
 
 
-        // Aponta para a memória CGRAM do caractere no LCD
         enviarComandoLCD(0x40 | (charId << 3));
 
 
@@ -373,15 +365,24 @@ namespace superKitAutomacao {
         }
 
 
-        // Retorna o ponteiro para a memória de tela (DDRAM)
         enviarComandoLCD(0x80);
-
-
-        // Retorna o símbolo correspondente em formato de texto
         return String.fromCharCode(charId);
     }
 
 
+    /**
+     * Matriz 5x8 para desenhar um caractere e usá-lo diretamente dentro do texto.
+     */
+    //% blockId="superkit_custom_char_matrix"
+    //% block="%leds"
+    //% imageLiteral=1
+    //% imageLiteralColumns=5
+    //% imageLiteralRows=8
+    //% shim=TD_ID
+    //% weight=91 group="Displays"
+    export function caractereCustomizado(leds: string): string {
+        return processarEGravarCGRAM(leds);
+    }
 
 
 
