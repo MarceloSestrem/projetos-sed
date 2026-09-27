@@ -306,65 +306,30 @@ namespace superKitAutomacao {
     }
 
     /**
-     * Cria um caractere customizado para LCD desenhando em uma matriz interativa 5x8 (como no bloco mostrar leds).
+     * Cria um caractere customizado para LCD via texto binário de 5 dígitos por linha (ex: 01110).
      */
-    //% blockId=superkit_create_char_matrix block="LCD desenhar caractere ID %id | %leds"
+    //% blockId=superkit_create_char_string block="LCD criar caractere ID %id (0-7) | L1 %l1 L2 %l2 L3 %l3 L4 %l4 L5 %l5 L6 %l6 L7 %l7 L8 %l8"
     //% id.min=0 id.max=7
-    //% imageLiteral=1
-    //% imageLiteralColumns=5
-    //% imageLiteralRows=8
-    //% leds.defl="`\n. . # . .\n. # . # .\n# . . . #\n# # # # #\n# . . . #\n. . . . .\n. . . . .\n. . . . .\n`"
-    //% weight=93 group="Displays"
-    export function criarCaractereMatrizLCD(id: number, leds: string): void {
+    //% l1.defl="00000" l2.defl="01010" l3.defl="11111" l4.defl="11111"
+    //% l5.defl="01110" l6.defl="00100" l7.defl="00000" l8.defl="00000"
+    //% weight=92 group="Displays" inlineInputMode=inline
+    export function criarCaractereLCDString(
+        id: number,
+        l1: string, l2: string, l3: string, l4: string,
+        l5: string, l6: string, l7: string, l8: string
+    ): void {
         let charId = id & 0x07;
         enviarComandoLCD(0x40 | (charId << 3));
-
-        let linhas = leds.split("\n");
-        let byteIndex = 0;
-
-        for (let i = 0; i < linhas.length; i++) {
-            let linha = linhas[i].trim();
-            if (linha.length == 0) continue;
-            if (byteIndex >= 8) break;
-
-            let rowVal = 0;
-            let col = 0;
-            for (let j = 0; j < linha.length; j++) {
-                let char = linha.charAt(j);
-                if (char == "#" || char == "1" || char == "*") {
-                    if (col < 5) {
-                        rowVal |= (1 << (4 - col));
-                    }
-                    col++;
-                } else if (char == "." || char == "0") {
-                    col++;
+        let linhas = [l1, l2, l3, l4, l5, l6, l7, l8];
+        for (let i = 0; i < 8; i++) {
+            let str = linhas[i];
+            let val = 0;
+            for (let j = 0; j < 5; j++) {
+                if (j < str.length && (str.charAt(j) == "1" || str.charAt(j) == "#")) {
+                    val |= (1 << (4 - j));
                 }
             }
-            enviarDadosLCD(rowVal);
-            byteIndex++;
-        }
-
-        while (byteIndex < 8) {
-            enviarDadosLCD(0);
-            byteIndex++;
-        }
-    }
-
-    /**
-     * Criar um caractere customizado para LCD definindo os valores numéricos de cada linha.
-     */
-    //% blockId=superkit_create_char_lcd block="LCD criar caractere ID %id (0-7) por linhas | L1 %l1 L2 %l2 L3 %l3 L4 %l4 L5 %l5 L6 %l6 L7 %l7 L8 %l8"
-    //% id.min=0 id.max=7
-    //% l1.min=0 l1.max=31 l2.min=0 l2.max=31 l3.min=0 l3.max=31 l4.min=0 l4.max=31
-    //% l5.min=0 l5.max=31 l6.min=0 l6.max=31 l7.min=0 l7.max=31 l8.min=0 l8.max=31
-    //% l1.defl=0b00000 l2.defl=0b01010 l3.defl=0b11111 l4.defl=0b11111 l5.defl=0b01110 l6.defl=0b00100 l7.defl=0b00000 l8.defl=0b00000
-    //% weight=92 group="Displays" inlineInputMode=inline
-    export function criarCaractereLCD(id: number, l1: number, l2: number, l3: number, l4: number, l5: number, l6: number, l7: number, l8: number): void {
-        let charId = id & 0x07;
-        enviarComandoLCD(0x40 | (charId << 3));
-        let bytes = [l1, l2, l3, l4, l5, l6, l7, l8];
-        for (let i = 0; i < 8; i++) {
-            enviarDadosLCD(bytes[i]);
+            enviarDadosLCD(val);
         }
     }
 
