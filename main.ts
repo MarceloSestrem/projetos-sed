@@ -311,13 +311,13 @@ namespace superKitAutomacao {
     /**
      * Cria um caractere customizado desenhando na matriz 5x8.
      */
-    //% blockId=superkit_create_custom_char block="LCD criar caractere %leds com ID %id"
-    //% id.min=0 id.max=7
+    //% blockId=superkit_create_custom_char block="LCD criar caractere %leds com ID %id=0"
+    //% id.min=0 id.max=7 id.defl=0
     //% imageLiteral=1
     //% imageLiteralColumns=5
     //% imageLiteralRows=8
     //% weight=92 group="Displays"
-    export function criarCaractereCustomizado(leds: string, id: number, dummy: number = 0): void {
+    export function criarCaractereCustomizado(leds: string, id: number = 0, dummy: number = 0): void {
         let charId = id & 0x07;
         // Aponta para a memória CGRAM do caractere
         enviarComandoLCD(0x40 | (charId << 3));
