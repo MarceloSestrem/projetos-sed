@@ -91,7 +91,6 @@ namespace superKitAutomacao {
         P7 = 7
     }
 
-    // Registradores do PCA9685
     const PCA9685_ADDRESS = 0x40
     const MODE1 = 0x00
     const MODE2 = 0x01
@@ -129,7 +128,7 @@ namespace superKitAutomacao {
     ]
 
     // =======================================================
-    // 🤖 SUB-CATEGORIA: ROBÓTICA
+    // 🤖 ROBÓTICA
     // =======================================================
 
     function initPCA9685(): void {
@@ -164,9 +163,6 @@ namespace superKitAutomacao {
         pins.i2cWriteBuffer(PCA9685_ADDRESS, buf);
     }
 
-    /**
-     * Controla um motor DC individual na Robotbit.
-     */
     //% blockId=robotbit_controlar_motor block="mover motor %motor | velocidade %velocidade"
     //% velocidade.min=-255 velocidade.max=255
     //% weight=100 group="Robótica"
@@ -185,9 +181,6 @@ namespace superKitAutomacao {
         writePWM(canalM2, 0);
     }
 
-    /**
-     * Controla dois motores DC simultaneamente.
-     */
     //% blockId=robotbit_controlar_dois_motores block="mover motor 1 %motor1 velocidade %vel1 | e motor 2 %motor2 velocidade %vel2"
     //% vel1.min=-255 vel1.max=255 vel2.min=-255 vel2.max=255
     //% weight=98 group="Robótica" inlineInputMode=inline
@@ -196,9 +189,6 @@ namespace superKitAutomacao {
         controlarMotor(motor2, vel2);
     }
 
-    /**
-     * Desliga e freia imediatamente TODOS os motores DC.
-     */
     //% blockId=robotbit_parar_todos_motores block="parar todos os motores"
     //% weight=95 group="Robótica"
     export function pararTodosOsMotores(): void {
@@ -206,9 +196,6 @@ namespace superKitAutomacao {
         controlarMotor(MotorSelecao.M2A, 0); controlarMotor(MotorSelecao.M2B, 0);
     }
 
-    /**
-     * Controla um Servo Motor nas portas S1 a S4.
-     */
     //% blockId=robotbit_controlar_servo block="definir servo na porta %porta | para ângulo %angulo °"
     //% angulo.min=0 angulo.max=180
     //% weight=90 group="Robótica"
@@ -218,9 +205,6 @@ namespace superKitAutomacao {
         writePWM(canalChip, pulso);
     }
 
-    /**
-     * Verifica os 3 sensores de linha conectados em P0, P1 e P2.
-     */
     //% blockId=robotbit_ler_tres_sensores block="sensores Esquerdo (P0) Centro (P1) Direito (P2) leem respectivamente %estEsq %estCent %estDir"
     //% weight=85 group="Robótica" inlineInputMode=inline
     export function lerTresSensores(estEsq: EstadoLinha, estCent: EstadoLinha, estDir: EstadoLinha): boolean {
@@ -230,9 +214,6 @@ namespace superKitAutomacao {
         return (valEsq == estEsq && valCent == estCent && valDir == estDir);
     }
 
-    /**
-     * Mede a distância usando um sensor ultrassônico HC-SR04.
-     */
     //% blockId=robotbit_ultrassonico_distancia block="distância ultrassônico Trig %trig | Echo %echo em %unidade"
     //% weight=80 group="Robótica"
     export function lerUltrassonico(trig: DigitalPin, echo: DigitalPin, unidade: DistanciaUnidade): number {
@@ -251,12 +232,9 @@ namespace superKitAutomacao {
     }
 
     // =======================================================
-    // 📺 SUB-CATEGORIA: DISPLAYS
+    // 📺 DISPLAYS
     // =======================================================
 
-    /**
-     * Inicializa o display LCD I2C (16x2 ou 20x4).
-     */
     //% blockId=superkit_init_lcd block="inicializar LCD I2C endereço %addr | modelo %modelo"
     //% addr.defl=0x27 weight=100 group="Displays"
     export function inicializarLCD(addr: number, modelo: ModeloLCD): void {
@@ -267,9 +245,6 @@ namespace superKitAutomacao {
         basic.pause(2);
     }
 
-    /**
-     * Escreve um texto em uma coordenada exata do LCD.
-     */
     //% blockId=superkit_print_lcd block="LCD mostrar texto %texto | na Coluna %coluna Linha %linha"
     //% coluna.min=0 coluna.max=19 weight=98 group="Displays"
     export function mostrarTextoLCD(texto: string, coluna: number, linha: LinhasLCD): void {
@@ -280,9 +255,6 @@ namespace superKitAutomacao {
         }
     }
 
-    /**
-     * Escreve texto alinhado (Esquerda, Centro ou Direita) em uma linha do LCD.
-     */
     //% blockId=superkit_print_aligned_lcd block="LCD mostrar texto %texto | alinhado à %alinhamento na Linha %linha (modelo %modelo)"
     //% weight=96 group="Displays"
     export function mostrarTextoAlinhadoLCD(texto: string, alinhamento: AlinhamentoTexto, linha: LinhasLCD, modelo: ModeloLCD): void {
@@ -296,9 +268,6 @@ namespace superKitAutomacao {
         mostrarTextoLCD(texto, col, linha);
     }
 
-    /**
-     * Escreve um valor numérico no LCD I2C.
-     */
     //% blockId=superkit_print_num_lcd block="LCD mostrar número %numero | na Coluna %coluna Linha %linha"
     //% coluna.min=0 coluna.max=19 weight=94 group="Displays"
     export function mostrarNumeroLCD(numero: number, coluna: number, linha: LinhasLCD): void {
@@ -306,36 +275,48 @@ namespace superKitAutomacao {
     }
 
     /**
-     * Cria um caractere customizado para LCD via texto binário de 5 dígitos por linha (ex: 01110).
+     * Cria um caractere customizado desenhando na matriz 5x8.
      */
-    //% blockId=superkit_create_char_string block="LCD criar caractere ID %id (0-7) | L1 %l1 L2 %l2 L3 %l3 L4 %l4 L5 %l5 L6 %l6 L7 %l7 L8 %l8"
+    //% blockId=superkit_create_custom_char block="LCD criar caractere ID %id | %matriz"
     //% id.min=0 id.max=7
-    //% l1.defl="00000" l2.defl="01010" l3.defl="11111" l4.defl="11111"
-    //% l5.defl="01110" l6.defl="00100" l7.defl="00000" l8.defl="00000"
-    //% weight=92 group="Displays" inlineInputMode=inline
-    export function criarCaractereLCDString(
-        id: number,
-        l1: string, l2: string, l3: string, l4: string,
-        l5: string, l6: string, l7: string, l8: string
-    ): void {
+    //% imageLiteral=1
+    //% imageLiteralColumns=5
+    //% imageLiteralRows=8
+    //% weight=92 group="Displays"
+    export function criarCaractereCustomizado(id: number, matriz: string): void {
         let charId = id & 0x07;
         enviarComandoLCD(0x40 | (charId << 3));
-        let linhas = [l1, l2, l3, l4, l5, l6, l7, l8];
-        for (let i = 0; i < 8; i++) {
-            let str = linhas[i];
+
+        let linhas = matriz.split("\n");
+        let count = 0;
+
+        for (let i = 0; i < linhas.length; i++) {
+            let linha = linhas[i].trim();
+            if (linha.length == 0) continue;
+
             let val = 0;
-            for (let j = 0; j < 5; j++) {
-                if (j < str.length && (str.charAt(j) == "1" || str.charAt(j) == "#")) {
-                    val |= (1 << (4 - j));
+            let col = 0;
+            for (let j = 0; j < linha.length; j++) {
+                let char = linha.charAt(j);
+                if (char == "#" || char == "1" || char == "*") {
+                    val |= (1 << (4 - col));
+                    col++;
+                } else if (char == "." || char == "0") {
+                    col++;
                 }
+                if (col >= 5) break;
             }
             enviarDadosLCD(val);
+            count++;
+            if (count >= 8) break;
+        }
+
+        while (count < 8) {
+            enviarDadosLCD(0);
+            count++;
         }
     }
 
-    /**
-     * Desenha um caractere customizado no LCD na posição informada.
-     */
     //% blockId=superkit_print_char_lcd block="LCD mostrar caractere customizado ID %id | na Coluna %coluna Linha %linha"
     //% id.min=0 id.max=7 coluna.min=0 coluna.max=19 weight=90 group="Displays"
     export function mostrarCaractereCustomizadoLCD(id: number, coluna: number, linha: LinhasLCD): void {
@@ -365,9 +346,6 @@ namespace superKitAutomacao {
         control.waitMicros(40);
     }
 
-    /**
-     * Inicializa a tela OLED SSD1306 (128x64).
-     */
     //% blockId=superkit_init_oled block="inicializar Tela OLED I2C endereço %addr"
     //% addr.defl=0x3C weight=88 group="Displays"
     export function inicializarOLED(addr: number): void {
@@ -382,9 +360,6 @@ namespace superKitAutomacao {
         limparOLED();
     }
 
-    /**
-     * Limpa a tela OLED.
-     */
     //% blockId=superkit_clear_oled block="limpar Tela OLED"
     //% weight=86 group="Displays"
     export function limparOLED(): void {
@@ -408,9 +383,6 @@ namespace superKitAutomacao {
         pins.i2cWriteBuffer(oledAddr, buf);
     }
 
-    /**
-     * Mostra um texto na OLED.
-     */
     //% blockId=superkit_print_oled block="OLED mostrar texto %texto | na Coluna %x Linha %y"
     //% x.min=0 x.max=120 y.min=0 y.max=7 weight=84 group="Displays"
     export function mostrarTextoOLED(texto: string, x: number, y: number): void {
@@ -428,9 +400,6 @@ namespace superKitAutomacao {
         }
     }
 
-    /**
-     * Inicializa o Nokia 5110 via SPI.
-     */
     //% blockId=superkit_init_nokia block="inicializar Nokia 5110 | SCK=P13 MOSI=P15 DC=%dc CE=%ce RST=%rst"
     //% weight=82 group="Displays"
     export function inicializarNokia5110(dc: DigitalPin, ce: DigitalPin, rst: DigitalPin): void {
@@ -443,12 +412,9 @@ namespace superKitAutomacao {
     }
 
     // =======================================================
-    // 🎛️ SUB-CATEGORIA: KEYPADS & EXPANSORES
+    // 🎛️ KEYPADS & EXPANSORES
     // =======================================================
 
-    /**
-     * Varre o Keypad 4x4 ligado na Robotbit (P0-P15).
-     */
     //% blockId=superkit_read_keypad block="varrer Keypad Robotbit (P0-P15)"
     //% weight=100 group="Keypads & Expansores"
     export function lerKeypad4x4(): string {
@@ -469,9 +435,6 @@ namespace superKitAutomacao {
         return "";
     }
 
-    /**
-     * Configura o endereço I2C do Keypad (PCF8574).
-     */
     //% blockId=superkit_init_i2c_keypad block="configurar Keypad I2C endereço %addr"
     //% addr.defl=0x20 weight=95 group="Keypads & Expansores"
     export function configurarKeypadI2C(addr: number): void {
@@ -481,9 +444,6 @@ namespace superKitAutomacao {
         pins.i2cWriteBuffer(keypadI2cAddr, buf);
     }
 
-    /**
-     * Varre o Keypad 4x4 via I2C.
-     */
     //% blockId=superkit_read_i2c_keypad block="varrer Keypad 4x4 via I2C"
     //% weight=90 group="Keypads & Expansores"
     export function lerKeypadI2C(): string {
@@ -506,9 +466,6 @@ namespace superKitAutomacao {
         return "";
     }
 
-    /**
-     * Escreve um byte completo na placa PCF8574.
-     */
     //% blockId=superkit_write_pcf8574 block="expansor PCF8574 endereço %addr | enviar byte %byteData"
     //% addr.defl=0x20 weight=85 group="Keypads & Expansores"
     export function writePCF8574(addr: number, byteData: number): void {
@@ -517,9 +474,6 @@ namespace superKitAutomacao {
         pins.i2cWriteBuffer(addr, buf);
     }
 
-    /**
-     * Controla um pino individual (P0 a P7) da placa expansora PCF8574.
-     */
     //% blockId=superkit_write_pcf8574_pin block="expansor PCF8574 endereço %addr | pino %pino como %estado"
     //% addr.defl=0x20 weight=84 group="Keypads & Expansores"
     export function controlarPinoPCF8574(addr: number, pino: PinoPCF8574, estado: EstadoChave): void {
@@ -531,9 +485,6 @@ namespace superKitAutomacao {
         writePCF8574(addr, pcfState);
     }
 
-    /**
-     * Lê o estado de um pino individual (P0 a P7) do expansor PCF8574.
-     */
     //% blockId=superkit_read_pcf8574_pin block="expansor PCF8574 endereço %addr | ler pino %pino"
     //% addr.defl=0x20 weight=83 group="Keypads & Expansores"
     export function lerPinoPCF8574(addr: number, pino: PinoPCF8574): number {
@@ -543,12 +494,9 @@ namespace superKitAutomacao {
     }
 
     // =======================================================
-    // 🔑 SUB-CATEGORIA: RFID
+    // 🔑 RFID
     // =======================================================
 
-    /**
-     * Inicializa o RFID PN532 via I2C.
-     */
     //% blockId=superkit_init_rfid block="inicializar Leitor RFID PN532 via I2C"
     //% weight=100 group="RFID"
     export function inicializarPN532(): boolean {
@@ -564,9 +512,6 @@ namespace superKitAutomacao {
         return true;
     }
 
-    /**
-     * Retorna o código UID da tag RFID aproximada.
-     */
     //% blockId=superkit_read_rfid_uid block="ler UID da tag RFID presente"
     //% weight=95 group="RFID"
     export function lerTagUID(): string {
@@ -597,30 +542,21 @@ namespace superKitAutomacao {
     }
 
     // =======================================================
-    // 🌡️ SUB-CATEGORIA: SENSORES (ÁGUA, GÁS, SOLO, LDR E PORTAS)
+    // 🌡️ SENSORES
     // =======================================================
 
-    /**
-     * Lê o nível de chuva ou presença de água no pino analógico (0 a 1023).
-     */
     //% blockId=superkit_sensor_agua block="sensor de água/chuva no pino analógico %pino"
     //% weight=100 group="Sensores"
     export function lerSensorAgua(pino: AnalogPin): number {
         return pins.analogReadPin(pino);
     }
 
-    /**
-     * Lê o nível de gás (MQ-2 / MQ-135) no pino analógico (0 a 1023).
-     */
     //% blockId=superkit_sensor_gas block="sensor de gás no pino analógico %pino"
     //% weight=95 group="Sensores"
     export function lerSensorGas(pino: AnalogPin): number {
         return pins.analogReadPin(pino);
     }
 
-    /**
-     * Lê a umidade do solo para hortas e converte em Porcentagem (0% a 100%).
-     */
     //% blockId=superkit_sensor_umidade_solo block="umidade do solo (0-100%%) no pino analógico %pino"
     //% weight=90 group="Sensores"
     export function lerUmidadeSolo(pino: AnalogPin): number {
@@ -629,27 +565,18 @@ namespace superKitAutomacao {
         return Math.clamp(0, 100, Math.round(porcentagem));
     }
 
-    /**
-     * Lê a luminosidade do ambiente através de um sensor LDR (0 a 1023).
-     */
     //% blockId=superkit_sensor_ldr block="luminosidade LDR no pino analógico %pino"
     //% weight=85 group="Sensores"
     export function lerLuminosidadeLDR(pino: AnalogPin): number {
         return pins.analogReadPin(pino);
     }
 
-    /**
-     * Leitura de qualquer entrada Digital (0 ou 1).
-     */
     //% blockId=superkit_ler_porta_digital block="ler porta digital %pino"
     //% weight=80 group="Sensores"
     export function lerPortaDigital(pino: DigitalPin): number {
         return pins.digitalReadPin(pino);
     }
 
-    /**
-     * Leitura direta de qualquer porta Analógica (0 a 1023).
-     */
     //% blockId=superkit_ler_porta_analogica block="ler porta analógica %pino"
     //% weight=75 group="Sensores"
     export function lerPortaAnalogica(pino: AnalogPin): number {
@@ -657,30 +584,21 @@ namespace superKitAutomacao {
     }
 
     // =======================================================
-    // 💡 SUB-CATEGORIA: LEDS & ATUADORES (AUTOMAÇÃO, CASAS E HORTAS)
+    // 💡 LEDS & ATUADORES
     // =======================================================
 
-    /**
-     * Aciona ou desliga um módulo Relé ou Bomba D'água para irrigação.
-     */
     //% blockId=superkit_rele_bomba block="definir Relé / Bomba D'água no pino %pino como %estado"
     //% weight=100 group="LEDs & Atuadores"
     export function controlarReleBomba(pino: DigitalPin, estado: EstadoChave): void {
         pins.digitalWritePin(pino, estado);
     }
 
-    /**
-     * Aciona ou desliga um LED simples ligado a uma porta digital.
-     */
     //% blockId=superkit_led_digital block="definir LED no pino digital %pino como %estado"
     //% weight=95 group="LEDs & Atuadores"
     export function controlarLEDDigital(pino: DigitalPin, estado: EstadoChave): void {
         pins.digitalWritePin(pino, estado);
     }
 
-    /**
-     * Regula o brilho de lâmpadas/LEDs (Dimerização PWM de 0 a 100%).
-     */
     //% blockId=superkit_led_dimerizado block="ajustar brilho do LED no pino analógico %pino em %porcentagem %%"
     //% porcentagem.min=0 porcentagem.max=100 weight=90 group="LEDs & Atuadores"
     export function controlarBrilhoLED(pino: AnalogPin, porcentagem: number): void {
@@ -688,9 +606,6 @@ namespace superKitAutomacao {
         pins.analogWritePin(pino, Math.round(pwmValor));
     }
 
-    /**
-     * Controla as cores de um LED RGB comum conectado em portas analógicas.
-     */
     //% blockId=superkit_led_rgb block="definir LED RGB | Pino R %pinoR Pino G %pinoG Pino B %pinoB | Red %r Green %g Blue %b"
     //% r.min=0 r.max=255 g.min=0 g.max=255 b.min=0 b.max=255
     //% weight=85 group="LEDs & Atuadores" inlineInputMode=inline
@@ -700,9 +615,6 @@ namespace superKitAutomacao {
         pins.analogWritePin(pinoB, Math.map(Math.clamp(0, 255, b), 0, 255, 0, 1023));
     }
 
-    /**
-     * Controla um semáforo de veículos (Verde, Amarelo e Vermelho) para maquetes.
-     */
     //% blockId=superkit_controlar_semaforo block="semáforo de veículos | Verde %pinoV Amarelo %pinoA Vermelho %pinoVm | Verde %estV Amarelo %estA Vermelho %estVm"
     //% weight=80 group="LEDs & Atuadores" inlineInputMode=inline
     export function controlarSemaforo(
@@ -714,9 +626,6 @@ namespace superKitAutomacao {
         pins.digitalWritePin(pinoVm, estVm);
     }
 
-    /**
-     * Controla um semáforo de pedestres (Verde e Vermelho) para maquetes.
-     */
     //% blockId=superkit_controlar_semaforo_pedestre block="semáforo de pedestre | Verde %pinoV Vermelho %pinoVm | Verde %estV Vermelho %estVm"
     //% weight=78 group="LEDs & Atuadores" inlineInputMode=inline
     export function controlarSemaforoPedestre(
