@@ -308,20 +308,34 @@ namespace superKitAutomacao {
     }
 
 
+    // Controle interno automático de slots da memória do LCD (0 a 7)
+    let proximoIdCGRAM = 0;
+    let cgramCache: { [desenho: string]: number } = {};
+
+
     /**
-     * Desenha um caractere na matriz 5x8, salva na memória do LCD e retorna como texto para usar dentro de frases.
+     * Matriz para desenhar um caractere e usá-lo diretamente dentro do texto.
      */
     //% blockId="superkit_custom_char_matrix"
-    //% block="caractere %leds| no ID %id"
-    //% id.min=0 id.max=7 id.defl=0
+    //% block="%leds"
     //% imageLiteral=1
     //% imageLiteralColumns=5
     //% imageLiteralRows=8
     //% weight=91 group="Displays"
-    export function caractereCustomizado(leds: string, id: number = 0, dummy: number = 0): string {
-        let charId = id & 0x07;
+    export function caractereCustomizado(leds: string, dummy: number = 0): string {
+        // Se esse mesmo desenho já foi salvo no LCD, reaproveita o ID existente
+        if (cgramCache[leds] !== undefined) {
+            return String.fromCharCode(cgramCache[leds]);
+        }
 
-        // Aponta para a memória CGRAM do caractere
+
+        // Define automaticamente qual slot (0 a 7) receberá o novo ícone
+        let charId = proximoIdCGRAM;
+        proximoIdCGRAM = (proximoIdCGRAM + 1) % 8;
+        cgramCache[leds] = charId;
+
+
+        // Aponta para a memória CGRAM do caractere no LCD
         enviarComandoLCD(0x40 | (charId << 3));
 
 
@@ -362,7 +376,7 @@ namespace superKitAutomacao {
         enviarComandoLCD(0x80);
 
 
-        // Retorna o caractere em formato string para ser impresso diretamente no texto
+        // Retorna o símbolo correspondente em formato de texto
         return String.fromCharCode(charId);
     }
 
