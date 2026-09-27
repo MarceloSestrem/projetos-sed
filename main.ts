@@ -1,5 +1,5 @@
 //% color="#1C2833" weight=120 icon="\uf013" block="Super Kit Automação"
-//% groups=['Robótica', 'Displays', 'Keypads', 'RFID']
+//% groups=['Robótica', 'Displays', 'Keypads & Expansores', 'RFID', 'Sensores', 'LEDs & Atuadores']
 namespace superKitAutomacao {
 
     export enum EstadoLinha {
@@ -56,7 +56,14 @@ namespace superKitAutomacao {
         LCD20x4 = 20
     }
 
-    // Registradores do Chip PCA9685 (Robotbit)
+    export enum EstadoChave {
+        //% block="LIGADO"
+        Ligado = 1,
+        //% block="DESLIGADO"
+        Desligado = 0
+    }
+
+    // Registradores do PCA9685
     const PCA9685_ADDRESS = 0x40
     const MODE1 = 0x00
     const MODE2 = 0x01
@@ -69,7 +76,6 @@ namespace superKitAutomacao {
     let rfidAddr = 0x24
     let keypadI2cAddr = 0x20
 
-    // Matriz de caracteres 5x7 para o OLED
     const FONTE_OLED = [
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x5f, 0x00, 0x00, 0x00, 0x07, 0x00, 0x07, 0x00,
         0x14, 0x7f, 0x14, 0x7f, 0x14, 0x24, 0x2a, 0x7f, 0x2a, 0x12, 0x23, 0x13, 0x08, 0x64, 0x62,
@@ -94,7 +100,7 @@ namespace superKitAutomacao {
     ]
 
     // =======================================================
-    // 🤖 SUB-CATEGORIA: ROBÓTICA E SEGUIDOR (ROBOTBIT & SENSORES)
+    // 🤖 SUB-CATEGORIA: ROBÓTICA
     // =======================================================
 
     function initPCA9685(): void {
@@ -205,7 +211,7 @@ namespace superKitAutomacao {
     }
 
     // =======================================================
-    // 📺 SUB-CATEGORIA: DISPLAYS (LCD I2C, OLED E NOKIA 5110)
+    // 📺 SUB-CATEGORIA: DISPLAYS
     // =======================================================
 
     /**
@@ -256,7 +262,7 @@ namespace superKitAutomacao {
     }
 
     /**
-     * Inicializa a mini tela gráfica OLED SSD1306 (128x64).
+     * Inicializa a tela OLED SSD1306 (128x64).
      */
     //% blockId=superkit_init_oled block="inicializar Tela OLED I2C endereço %addr"
     //% addr.defl=0x3C weight=90 group="Displays"
@@ -299,7 +305,7 @@ namespace superKitAutomacao {
     }
 
     /**
-     * Mostra um texto em coordenadas específicas na OLED.
+     * Mostra um texto na OLED.
      */
     //% blockId=superkit_print_oled block="OLED mostrar texto %texto | na Coluna %x Linha %y"
     //% x.min=0 x.max=120 y.min=0 y.max=7 weight=86 group="Displays"
@@ -319,7 +325,7 @@ namespace superKitAutomacao {
     }
 
     /**
-     * Inicializa o display Nokia 5110 via SPI.
+     * Inicializa o Nokia 5110 via SPI.
      */
     //% blockId=superkit_init_nokia block="inicializar Nokia 5110 | SCK=P13 MOSI=P15 DC=%dc CE=%ce RST=%rst"
     //% weight=82 group="Displays"
@@ -333,16 +339,16 @@ namespace superKitAutomacao {
     }
 
     // =======================================================
-    // 🎛️ SUB-CATEGORIA: INTERFACES E KEYPADS
+    // 🎛️ SUB-CATEGORIA: KEYPADS & EXPANSORES
     // =======================================================
 
     /**
-     * Varre o Keypad 4x4 ligado direto na Robotbit (Linhas P0,P1,P2,P8 e Colunas P12,P13,P14,P15).
+     * Varre o Keypad 4x4 ligado na Robotbit (P0-P15).
      */
     //% blockId=superkit_read_keypad block="varrer Keypad Robotbit (P0-P15)"
-    //% weight=100 group="Keypads"
+    //% weight=100 group="Keypads & Expansores"
     export function lerKeypad4x4(): string {
-        let teclas = ["1", "2", "3", "A", "4", "5", "6", "B", "7", "8", "9", "C", "", "0", "#", "D"];
+        let teclas = ["1", "2", "3", "A", "4", "5", "6", "B", "7", "8", "9", "C", "*", "0", "#", "D"];
         let linhas = [DigitalPin.P0, DigitalPin.P1, DigitalPin.P2, DigitalPin.P8];
         let colunas = [DigitalPin.P12, DigitalPin.P13, DigitalPin.P14, DigitalPin.P15];
         for (let c = 0; c < 4; c++) pins.setPull(colunas[c], PinPullMode.PullUp);
@@ -360,10 +366,10 @@ namespace superKitAutomacao {
     }
 
     /**
-     * Configura o endereço I2C do módulo expansor Keypad (PCF8574).
+     * Configura o endereço I2C do Keypad (PCF8574).
      */
     //% blockId=superkit_init_i2c_keypad block="configurar Keypad I2C endereço %addr"
-    //% addr.defl=0x20 weight=95 group="Keypads"
+    //% addr.defl=0x20 weight=95 group="Keypads & Expansores"
     export function configurarKeypadI2C(addr: number): void {
         keypadI2cAddr = addr;
         let buf = pins.createBuffer(1);
@@ -372,12 +378,12 @@ namespace superKitAutomacao {
     }
 
     /**
-     * Varre a matriz do Keypad 4x4 através do barramento I2C.
+     * Varre o Keypad 4x4 via I2C.
      */
     //% blockId=superkit_read_i2c_keypad block="varrer Keypad 4x4 via I2C"
-    //% weight=90 group="Keypads"
+    //% weight=90 group="Keypads & Expansores"
     export function lerKeypadI2C(): string {
-        let teclas = ["1", "2", "3", "A", "4", "5", "6", "B", "7", "8", "9", "C", "", "0", "#", "D"];
+        let teclas = ["1", "2", "3", "A", "4", "5", "6", "B", "7", "8", "9", "C", "*", "0", "#", "D"];
         for (let r = 0; r < 4; r++) {
             let wBuf = pins.createBuffer(1);
             wBuf.setNumber(NumberFormat.UInt8LE, 0, 0xFF & ~(1 << r));
@@ -397,10 +403,10 @@ namespace superKitAutomacao {
     }
 
     /**
-     * Escreve uma máscara de bits diretamente em placas expansoras genéricas I2C PCF8574.
+     * Escreve bytes na placa PCF8574.
      */
     //% blockId=superkit_write_pcf8574 block="expansor PCF8574 endereço %addr | enviar byte %byteData"
-    //% addr.defl=0x20 weight=85 group="Keypads"
+    //% addr.defl=0x20 weight=85 group="Keypads & Expansores"
     export function writePCF8574(addr: number, byteData: number): void {
         let buf = pins.createBuffer(1);
         buf.setNumber(NumberFormat.UInt8LE, 0, byteData);
@@ -408,11 +414,11 @@ namespace superKitAutomacao {
     }
 
     // =======================================================
-    // 🔑 SUB-CATEGORIA: IDENTIFICAÇÃO (RFID PN532 I2C)
+    // 🔑 SUB-CATEGORIA: RFID
     // =======================================================
 
     /**
-     * Inicializa o módulo RFID PN532 configurado em modo I2C.
+     * Inicializa o RFID PN532 via I2C.
      */
     //% blockId=superkit_init_rfid block="inicializar Leitor RFID PN532 via I2C"
     //% weight=100 group="RFID"
@@ -430,7 +436,7 @@ namespace superKitAutomacao {
     }
 
     /**
-     * Extrai o código UID único de uma tag RFID aproximada em formato Hexadecimal legível.
+     * Retorna o código UID da tag RFID aproximada.
      */
     //% blockId=superkit_read_rfid_uid block="ler UID da tag RFID presente"
     //% weight=95 group="RFID"
@@ -459,5 +465,136 @@ namespace superKitAutomacao {
             return uid;
         }
         return "";
+    }
+
+    // =======================================================
+    // 🌡️ SUB-CATEGORIA: SENSORES (ÁGUA, GÁS, SOLO, LDR E PORTAS)
+    // =======================================================
+
+    /**
+     * Lê o nível de chuva ou presença de água no pino analógico (0 a 1023).
+     */
+    //% blockId=superkit_sensor_agua block="sensor de água/chuva no pino analógico %pino"
+    //% weight=100 group="Sensores"
+    export function lerSensorAgua(pino: AnalogPin): number {
+        return pins.analogReadPin(pino);
+    }
+
+    /**
+     * Lê o nível de gás (MQ-2 / MQ-135) no pino analógico (0 a 1023).
+     */
+    //% blockId=superkit_sensor_gas block="sensor de gás no pino analógico %pino"
+    //% weight=95 group="Sensores"
+    export function lerSensorGas(pino: AnalogPin): number {
+        return pins.analogReadPin(pino);
+    }
+
+    /**
+     * Lê a umidade do solo para hortas e converte em Porcentagem (0% a 100%).
+     */
+    //% blockId=superkit_sensor_umidade_solo block="umidade do solo (0-100%%) no pino analógico %pino"
+    //% weight=90 group="Sensores"
+    export function lerUmidadeSolo(pino: AnalogPin): number {
+        let leitura = pins.analogReadPin(pino);
+        let porcentagem = Math.map(leitura, 0, 1023, 0, 100);
+        return Math.clamp(0, 100, Math.round(porcentagem));
+    }
+
+    /**
+     * Lê a luminosidade do ambiente através de um sensor LDR (0 a 1023).
+     */
+    //% blockId=superkit_sensor_ldr block="luminosidade LDR no pino analógico %pino"
+    //% weight=85 group="Sensores"
+    export function lerLuminosidadeLDR(pino: AnalogPin): number {
+        return pins.analogReadPin(pino);
+    }
+
+    /**
+     * Leitura de qualquer entrada Digital (0 ou 1).
+     */
+    //% blockId=superkit_ler_porta_digital block="ler porta digital %pino"
+    //% weight=80 group="Sensores"
+    export function lerPortaDigital(pino: DigitalPin): number {
+        return pins.digitalReadPin(pino);
+    }
+
+    /**
+     * Leitura direta de qualquer porta Analógica (0 a 1023).
+     */
+    //% blockId=superkit_ler_porta_analogica block="ler porta analógica %pino"
+    //% weight=75 group="Sensores"
+    export function lerPortaAnalogica(pino: AnalogPin): number {
+        return pins.analogReadPin(pino);
+    }
+
+    // =======================================================
+    // 💡 SUB-CATEGORIA: LEDS & ATUADORES (AUTOMAÇÃO, CASAS E HORTAS)
+    // =======================================================
+
+    /**
+     * Aciona ou desliga um módulo Relé ou Bomba D'água para irrigação.
+     */
+    //% blockId=superkit_rele_bomba block="definir Relé / Bomba D'água no pino %pino como %estado"
+    //% weight=100 group="LEDs & Atuadores"
+    export function controlarReleBomba(pino: DigitalPin, estado: EstadoChave): void {
+        pins.digitalWritePin(pino, estado);
+    }
+
+    /**
+     * Aciona ou desliga um LED simples ligado a uma porta digital.
+     */
+    //% blockId=superkit_led_digital block="definir LED no pino digital %pino como %estado"
+    //% weight=95 group="LEDs & Atuadores"
+    export function controlarLEDDigital(pino: DigitalPin, estado: EstadoChave): void {
+        pins.digitalWritePin(pino, estado);
+    }
+
+    /**
+     * Regula o brilho de lâmpadas/LEDs (Dimerização PWM de 0 a 100%).
+     */
+    //% blockId=superkit_led_dimerizado block="ajustar brilho do LED no pino analógico %pino em %porcentagem %%"
+    //% porcentagem.min=0 porcentagem.max=100 weight=90 group="LEDs & Atuadores"
+    export function controlarBrilhoLED(pino: AnalogPin, porcentagem: number): void {
+        let pwmValor = Math.map(Math.clamp(0, 100, porcentagem), 0, 100, 0, 1023);
+        pins.analogWritePin(pino, Math.round(pwmValor));
+    }
+
+    /**
+     * Controla as cores de um LED RGB comum conectado em portas analógicas.
+     */
+    //% blockId=superkit_led_rgb block="definir LED RGB | Pino R %pinoR Pino G %pinoG Pino B %pinoB | Red %r Green %g Blue %b"
+    //% r.min=0 r.max=255 g.min=0 g.max=255 b.min=0 b.max=255
+    //% weight=85 group="LEDs & Atuadores" inlineInputMode=inline
+    export function controlarLEDRGB(pinoR: AnalogPin, pinoG: AnalogPin, pinoB: AnalogPin, r: number, g: number, b: number): void {
+        pins.analogWritePin(pinoR, Math.map(Math.clamp(0, 255, r), 0, 255, 0, 1023));
+        pins.analogWritePin(pinoG, Math.map(Math.clamp(0, 255, g), 0, 255, 0, 1023));
+        pins.analogWritePin(pinoB, Math.map(Math.clamp(0, 255, b), 0, 255, 0, 1023));
+    }
+
+    /**
+     * Controla um semáforo de veículos (Verde, Amarelo e Vermelho) para maquetes.
+     */
+    //% blockId=superkit_controlar_semaforo block="semáforo de veículos | Verde %pinoV Amarelo %pinoA Vermelho %pinoVm | Verde %estV Amarelo %estA Vermelho %estVm"
+    //% weight=80 group="LEDs & Atuadores" inlineInputMode=inline
+    export function controlarSemaforo(
+        pinoV: DigitalPin, pinoA: DigitalPin, pinoVm: DigitalPin,
+        estV: EstadoChave, estA: EstadoChave, estVm: EstadoChave
+    ): void {
+        pins.digitalWritePin(pinoV, estV);
+        pins.digitalWritePin(pinoA, estA);
+        pins.digitalWritePin(pinoVm, estVm);
+    }
+
+    /**
+     * Controla um semáforo de pedestres (Verde e Vermelho) para maquetes.
+     */
+    //% blockId=superkit_controlar_semaforo_pedestre block="semáforo de pedestre | Verde %pinoV Vermelho %pinoVm | Verde %estV Vermelho %estVm"
+    //% weight=78 group="LEDs & Atuadores" inlineInputMode=inline
+    export function controlarSemaforoPedestre(
+        pinoV: DigitalPin, pinoVm: DigitalPin,
+        estV: EstadoChave, estVm: EstadoChave
+    ): void {
+        pins.digitalWritePin(pinoV, estV);
+        pins.digitalWritePin(pinoVm, estVm);
     }
 }
