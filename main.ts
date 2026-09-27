@@ -306,9 +306,54 @@ namespace superKitAutomacao {
     }
 
     /**
-     * Criar um caractere customizado para LCD (ID 0 a 7) definindo as 8 linhas (0 a 31 / binário 0b00000 a 0b11111).
+     * Cria um caractere customizado para LCD desenhando em uma matriz interativa 5x8 (como no bloco mostrar leds).
      */
-    //% blockId=superkit_create_char_lcd block="LCD criar caractere ID %id (0-7) | L1 %l1 L2 %l2 L3 %l3 L4 %l4 L5 %l5 L6 %l6 L7 %l7 L8 %l8"
+    //% blockId=superkit_create_char_matrix block="LCD desenhar caractere ID %id | %leds"
+    //% id.min=0 id.max=7
+    //% imageLiteral=1
+    //% imageLiteralColumns=5
+    //% imageLiteralRows=8
+    //% leds.defl="`\n. . # . .\n. # . # .\n# . . . #\n# # # # #\n# . . . #\n. . . . .\n. . . . .\n. . . . .\n`"
+    //% weight=93 group="Displays"
+    export function criarCaractereMatrizLCD(id: number, leds: string): void {
+        let charId = id & 0x07;
+        enviarComandoLCD(0x40 | (charId << 3));
+
+        let linhas = leds.split("\n");
+        let byteIndex = 0;
+
+        for (let i = 0; i < linhas.length; i++) {
+            let linha = linhas[i].trim();
+            if (linha.length == 0) continue;
+            if (byteIndex >= 8) break;
+
+            let rowVal = 0;
+            let col = 0;
+            for (let j = 0; j < linha.length; j++) {
+                let char = linha.charAt(j);
+                if (char == "#" || char == "1" || char == "*") {
+                    if (col < 5) {
+                        rowVal |= (1 << (4 - col));
+                    }
+                    col++;
+                } else if (char == "." || char == "0") {
+                    col++;
+                }
+            }
+            enviarDadosLCD(rowVal);
+            byteIndex++;
+        }
+
+        while (byteIndex < 8) {
+            enviarDadosLCD(0);
+            byteIndex++;
+        }
+    }
+
+    /**
+     * Criar um caractere customizado para LCD definindo os valores numéricos de cada linha.
+     */
+    //% blockId=superkit_create_char_lcd block="LCD criar caractere ID %id (0-7) por linhas | L1 %l1 L2 %l2 L3 %l3 L4 %l4 L5 %l5 L6 %l6 L7 %l7 L8 %l8"
     //% id.min=0 id.max=7
     //% l1.min=0 l1.max=31 l2.min=0 l2.max=31 l3.min=0 l3.max=31 l4.min=0 l4.max=31
     //% l5.min=0 l5.max=31 l6.min=0 l6.max=31 l7.min=0 l7.max=31 l8.min=0 l8.max=31
