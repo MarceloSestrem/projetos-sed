@@ -312,6 +312,7 @@ namespace superKitAutomacao {
      * Cria um caractere customizado desenhando na matriz 5x8.
      */
     //% blockId=superkit_create_custom_char block="LCD criar caractere ID %id"
+    //% id.shadow="math_number"
     //% id.defl=0
     //% id.min=0 id.max=7
     //% imageLiteral=1
