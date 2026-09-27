@@ -322,7 +322,7 @@ namespace superKitAutomacao {
     //% imageLiteralColumns=5
     //% imageLiteralRows=8
     //% weight=91 group="Displays"
-    export function caractereCustomizado(leds: string, dummy: number = 0): string {
+    export function caractereCustomizado(leds: string): string {
         // Se esse mesmo desenho já foi salvo no LCD, reaproveita o ID existente
         if (cgramCache[leds] !== undefined) {
             return String.fromCharCode(cgramCache[leds]);
