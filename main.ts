@@ -308,34 +308,62 @@ namespace superKitAutomacao {
     }
 
 
-    export enum CaractereLCD {
-        //% block="caractere 0"
-        Char0 = 0,
-        //% block="caractere 1"
-        Char1 = 1,
-        //% block="caractere 2"
-        Char2 = 2,
-        //% block="caractere 3"
-        Char3 = 3,
-        //% block="caractere 4"
-        Char4 = 4,
-        //% block="caractere 5"
-        Char5 = 5,
-        //% block="caractere 6"
-        Char6 = 6,
-        //% block="caractere 7"
-        Char7 = 7
-    }
-
-
     /**
-     * Retorna o caractere customizado como texto para usar dentro de frases.
+     * Desenha um caractere na matriz 5x8, salva na memória do LCD e retorna como texto para usar dentro de frases.
      */
-    //% blockId="superkit_custom_char_enum"
-    //% block="caractere %char"
+    //% blockId="superkit_custom_char_matrix"
+    //% block="caractere %leds| no ID %id"
+    //% id.min=0 id.max=7 id.defl=0
+    //% imageLiteral=1
+    //% imageLiteralColumns=5
+    //% imageLiteralRows=8
     //% weight=91 group="Displays"
-    export function obterCaractereEspecial(char: CaractereLCD): string {
-        return String.fromCharCode(char);
+    export function caractereCustomizado(leds: string, id: number = 0, dummy: number = 0): string {
+        let charId = id & 0x07;
+
+        // Aponta para a memória CGRAM do caractere
+        enviarComandoLCD(0x40 | (charId << 3));
+
+
+        let linhas = leds.split("\n");
+        let count = 0;
+
+
+        for (let i = 0; i < linhas.length; i++) {
+            let linha = linhas[i].trim();
+            if (linha.length == 0) continue;
+
+
+            let val = 0;
+            let col = 0;
+            for (let j = 0; j < linha.length; j++) {
+                let char = linha.charAt(j);
+                if (char == "#" || char == "1" || char == "*") {
+                    val |= (1 << (4 - col));
+                    col++;
+                } else if (char == "." || char == "0") {
+                    col++;
+                }
+                if (col >= 5) break;
+            }
+            enviarDadosLCD(val);
+            count++;
+            if (count >= 8) break;
+        }
+
+
+        while (count < 8) {
+            enviarDadosLCD(0);
+            count++;
+        }
+
+
+        // Retorna o ponteiro para a memória de tela (DDRAM)
+        enviarComandoLCD(0x80);
+
+
+        // Retorna o caractere em formato string para ser impresso diretamente no texto
+        return String.fromCharCode(charId);
     }
 
 
